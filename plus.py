@@ -10,6 +10,7 @@ from time import time
 def get_all_data():
     with open("data.json") as data_f:
         return load(data_f)
+    # TODO - Use BoardMessage objects instead for the value
 
 
 def update_data(data):
@@ -39,6 +40,18 @@ def get_settings():
 def update_settings(s_data):
     with open("settings.json", "w") as set_f:
         set_f.write(dumps(s_data))
+
+
+async def true_react_count(reaction):
+    self_react_check = reaction.msg.author in await reaction.users().flatten()
+    # If self-react, subtract 1 from counter
+    return reaction.count - self_react_check
+
+
+class BoardMessage:
+    def __init__(self, unix_timestamp, reaction_count):
+        self.time = unix_timestamp
+        self.reacts = reaction_count
 
 
 class Plus(commands.Cog):
@@ -101,43 +114,52 @@ class Plus(commands.Cog):
         print(f"Got: {reaction}")
 
         if reaction.message.id in self.message_store:
-
             msg_tuple = self.message_store[reaction.message.id]
-            star_msg = await self.bot.get_channel(self.chl_id).fetch_message(self.message_store[reaction.message.id][0])
+            star_msg = await self.bot.get_channel(self.chl_id).fetch_message(msg_tuple[0])
             num = reaction.count
-            if self.bot.get_user(self.message_store[reaction.message.id][1]) in await reaction.users().flatten():
+            if self.bot.get_user(msg_tuple[1]) in await reaction.users().flatten():
                 num -= 1
             await star_msg.edit(content=f" {str(emote)} **{num}** | {reaction.message.channel.mention}")
             return
 
-        num = reaction.count
-        print(num)
-        if reaction.message.author in await reaction.users().flatten():
-            num -= 1
-        print(num)
-
-        if num >= self.threshold:
+        if await true_react_count(reaction) >= self.threshold:
             await self.make_new(reaction.message)
 
     @commands.Cog.listener()
     async def on_reaction_remove(self, reaction, user):
         # TODO: sort out what happens when a user removes a reaction
-        # Note: it might disappear from starboard, or not at all if it's the message author!
+        # Note: it might disappear from starboard, or not at all if it's the message author! Might also delete entirely.
         pass
+
+    # Also happens if the number of reactions hit 0
+    def message_store_remove(self, msg_id):
+        if message := self.message_store.pop(msg_id, False):
+            print(f"Message deleted: {message}")
+            # Delete the message in the client itself
+            # Should also remove in the users where necessary
 
     @commands.Cog.listener()
     async def on_reaction_clear(self, message, reactions):
-        # TODO: this is probably one of the nicer cases to deal with
+        self.message_store_remove(message.message_id)
         pass
+
+    @commands.Cog.listener()
+    async def on_raw_message_delete(self, payload):
+        self.message_store_remove(payload.message_id)
+
+    @commands.Cog.listener()
+    async def on_raw_bulk_message_delete(self, payload):
+        for msg_id in payload.message_ids:
+            self.message_store_remove(msg_id)
 
     async def make_new(self, react_msg):
         em = Embed(colour=0x8B008B,
                    description=f"[[Jump to original]({react_msg.jump_url})]\n\n{react_msg.content}")
         em.set_author(name=str(react_msg.author), icon_url=react_msg.author.avatar_url)
 
-        # What if it's not an image?
         if len(react_msg.attachments) != 0:
             attachments = react_msg.attachments
+            # What if it's not an image?
             em.set_image(url=attachments[0].url)
 
         emote_num = self.threshold
@@ -161,10 +183,7 @@ class Plus(commands.Cog):
                 for react in msg.reactions:
                     if react.emoji == emote:
                         # Check if there's a self-react
-                        id_list = []
-                        for user in await react.users().flatten():
-                            id_list.append(user.id)
-                        self_react_check = msg.author.id in id_list
+                        self_react_check = msg.author in await react.users().flatten()
                         # If self-react, subtract 1 from counter
                         react_num = react.count - self_react_check
 
@@ -201,7 +220,7 @@ class Plus(commands.Cog):
         if value < 1:
             await ctx.send(f"Ah yes, a threshold of {value} messages. That makes perfect sense.")
             return
-        elif value > 9000000000:
+        elif value > len(ctx.guild.members):
             await ctx.send("What you entered there is literally larger than the population of the earth. Get help.")
         self.threshold = value
         await ctx.channel.send(f"Reaction threshold updated to: {value}")
@@ -213,6 +232,7 @@ class Plus(commands.Cog):
             e = self.bot.get_emoji(int(emote))
             if e is None:
                 await ctx.send("The ID entered does not match any custom emote.")
+                return
             self.emote = int(emote)
             await ctx.send(f"Set emote to {str(e)}.")
             return
@@ -228,6 +248,7 @@ class Plus(commands.Cog):
     async def stats(self, ctx, target_user=None):
         # TODO If no arguments, return top X users by emote, and top X starred messages (only the IDs).
         if target_user is None:
+
             return
 
         # TODO If a user ID is passed, return top X starred messages of the user, with total emote count
