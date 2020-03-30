@@ -53,6 +53,7 @@ class Plus(commands.Cog):
         self.emote = s_data["emote"]
 
         # These properties will be uploaded to 'data.json' periodically
+        # TODO - For the love of god use a Map
         self.message_store = {}  # '<msg id>': ('timestamp': <unix time int>, 'reacts': <star num>)
         self.user_store = {}
         self.update_stores()
@@ -190,7 +191,7 @@ class Plus(commands.Cog):
 
     @commands.command()
     async def leaderboard(self, ctx):
-        # Todo: Return top X users in embed, should probably take some 6thbot/chess bot code snippets.
+        # Todo: Return top X users in embed, should probably take some code snippets from other projects.
         pass
 
 

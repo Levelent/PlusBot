@@ -1,12 +1,12 @@
 import discord
 from discord.ext import commands
 from datetime import datetime
-from json import loads
+from json import load
 
 
 def token_retrieve(reference):
     with open("token.json", "r", encoding="utf-8") as file:
-        token_dict = loads(file.read())
+        token_dict = load(file)
     return token_dict[reference]
 
 
@@ -28,7 +28,7 @@ class BotCore(commands.Bot):  # discord.ext.commands.Bot is a subclass of discor
 
 
 # Initialising the bot client
-bot = BotCore(description="A Bot Designed for the r/6thForm Discord.",
+bot = BotCore(description="Florin would be proud.",
               activity=discord.Game("with numbers"),  # "playing" is prefixed at the start of the status
               command_prefix="plus.")
 bot.load_extension('plus')
