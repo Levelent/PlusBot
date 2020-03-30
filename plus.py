@@ -225,8 +225,12 @@ class Plus(commands.Cog):
             await ctx.send("What you entered is neither a standard emote, nor a custom emote id.")
 
     @commands.command()
-    async def leaderboard(self, ctx):
-        # Todo: Return top X users in embed, should probably take some code snippets from other projects.
+    async def stats(self, ctx, target_user=None):
+        # TODO If no arguments, return top X users by emote, and top X starred messages (only the IDs).
+        if target_user is None:
+            return
+
+        # TODO If a user ID is passed, return top X starred messages of the user, with total emote count
         pass
 
 
