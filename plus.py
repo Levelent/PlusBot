@@ -125,6 +125,11 @@ class Plus(commands.Cog):
         # Note: it might disappear from starboard, or not at all if it's the message author!
         pass
 
+    @commands.Cog.listener()
+    async def on_reaction_clear(self, message, reactions):
+        # TODO: this is probably one of the nicer cases to deal with
+        pass
+
     async def make_new(self, react_msg):
         em = Embed(colour=0x8B008B,
                    description=f"[[Jump to original]({react_msg.jump_url})]\n\n{react_msg.content}")
