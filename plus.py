@@ -24,7 +24,7 @@ def get_recent_data(days):
     msg_data_new = {}
     for key, value in msg_data.items():
         unix_now = int(time())
-        if (unix_now - key["unix_timestamp"]) < (days * 86400):  # 86400 is no. of seconds per day
+        if (unix_now - key["unix_timestamp"]) < (days * 86400):  # The number of seconds per day
             msg_data_new[key] = value
 
     return {"messages": msg_data_new, "users": data["users"]}
@@ -52,9 +52,9 @@ class Plus(commands.Cog):
         self.emote = s_data["emote"]
 
         # These properties will be uploaded to 'data.json' periodically
-        # TODO - For the love of god use a Map
         self.message_store = {}  # '<msg id>': ('timestamp': <unix time int>, 'reacts': <star num>)
         self.user_store = {}
+
         self.update_stores()
         self.data_transfer.start()
 
@@ -121,6 +121,8 @@ class Plus(commands.Cog):
 
     @commands.Cog.listener()
     async def on_reaction_remove(self, reaction, user):
+        # TODO: sort out what happens when a user removes a reaction
+        # Note: it might disappear from starboard, or not at all if it's the message author!
         pass
 
     async def make_new(self, react_msg):
@@ -134,14 +136,40 @@ class Plus(commands.Cog):
             em.set_image(url=attachments[0].url)
 
         emote_num = self.threshold
-        star_chl = self.bot.get_channel(self.chl_id)
-        star_msg = await star_chl.send(f" {self.get_emote()}**{emote_num}** | {react_msg.channel.mention}", embed=em)
+        out_chl = self.bot.get_channel(self.chl_id)
+        out_msg = await out_chl.send(f" {self.get_emote()}**{emote_num}** | {react_msg.channel.mention}", embed=em)
 
-        msg_obj = {"star_msg_id": star_msg.id, "user_id": react_msg.author.id, "unix_timestamp": int(time())}
+        msg_obj = {"star_msg_id": out_msg.id, "user_id": react_msg.author.id, "unix_timestamp": int(time())}
         self.message_store[react_msg.id] = msg_obj
 
     async def update_count(self, react_msg, log_msg):
         pass
+
+    @commands.command()
+    @commands.has_guild_permissions(manage_server=True)
+    async def updateall(self, ctx):
+        emote = self.get_emote()
+
+        messages = {}
+        for chl in ctx.guild.text_channels:
+            async for msg in chl.history(oldest_first=True):
+                for react in msg.reactions:
+                    if react.emoji == emote:
+                        # Check if there's a self-react
+                        id_list = []
+                        for user in await react.users().flatten():
+                            id_list.append(user.id)
+                        self_react_check = msg.author.id in id_list
+                        # If self-react, subtract 1 from counter
+                        react_num = react.count - self_react_check
+
+                        if react_num >= self.threshold:
+                            # Need to put into more permanent structure
+                            messages[msg.created_at] = (msg, react_num)
+                            break
+
+        for msg in sorted(messages):
+            await self.make_new(msg)
 
     @commands.command()
     @commands.has_guild_permissions(manage_messages=True)
