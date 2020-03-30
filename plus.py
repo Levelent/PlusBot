@@ -57,8 +57,6 @@ class Plus(commands.Cog):
         self.message_store = {}  # '<msg id>': ('timestamp': <unix time int>, 'reacts': <star num>)
         self.user_store = {}
         self.update_stores()
-
-        await sleep(120)
         self.data_transfer.start()
 
     def update_stores(self):
@@ -81,6 +79,11 @@ class Plus(commands.Cog):
 
         combine = {"messages": msg_data, "users": user_data}
         update_data(combine)
+
+    @data_transfer.before_loop
+    async def before_transfer(self):
+        await self.bot.wait_until_ready()
+        await sleep(120)
 
     def get_emote(self):
         if isinstance(self.emote, int):

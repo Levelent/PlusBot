@@ -16,14 +16,16 @@ class BotCore(commands.Bot):  # discord.ext.commands.Bot is a subclass of discor
         self.start_time = datetime.utcnow()
 
     async def on_ready(self):
-        print('Logged on as {0}!'.format(self.user))
+        print(f'Logged on as {self.user}!')
 
     async def on_message(self, msg):
+        # Stops users from sending commands in DMs
         if not msg.author.bot and not str(msg.channel.type) == "text":
             await msg.channel.send("Sorry, commands don't work in DMs. Try talking to me on a server instead!")
             return
+        # If mentioned in chat, reacts with a wave
         if str(msg.guild.me.id) in msg.content.lower() or msg.guild.me.name.lower() in msg.content.lower():
-            await msg.add_reaction("\U0001F44B")  # Adds the wave reaction
+            await msg.add_reaction('👋')
         await bot.process_commands(msg)
 
 
