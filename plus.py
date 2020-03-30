@@ -8,7 +8,6 @@ from time import time
 
 # Note that the Message ID has to be stored as a string.
 def get_all_data():
-    load("data.json")
     with open("data.json") as data_f:
         return load(data_f)
 
