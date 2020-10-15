@@ -1,4 +1,5 @@
 import discord
+import logging
 from discord.ext import commands
 from datetime import datetime
 from json import load
@@ -29,6 +30,7 @@ class BotCore(commands.Bot):  # discord.ext.commands.Bot is a subclass of discor
         await bot.process_commands(msg)
 
 
+logging.basicConfig(level=logging.INFO)
 # Initialising the bot client
 bot = BotCore(description="Florin would be proud.",
               activity=discord.Game("with numbers"),  # "playing" is prefixed at the start of the status
