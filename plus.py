@@ -234,13 +234,18 @@ class Plus(commands.Cog):
 
     @commands.command()
     @commands.has_guild_permissions(manage_guild=True)
-    async def setup(self, ctx):
+    async def setup(self, ctx, after_id: int = None):
         emote = self.get_emote()
+
+        if after_id is None:
+            after = None
+        else:
+            after = Object(after_id).created_at
 
         messages = []
         for chl in ctx.guild.text_channels:
             print(chl.name)
-            async for msg in chl.history(limit=None, after=Object(761697871773958175).created_at, oldest_first=True):
+            async for msg in chl.history(limit=None, after=after, oldest_first=True):
                 for react in msg.reactions:
                     if react.emoji == emote:
                         # Check if there's a self-react
