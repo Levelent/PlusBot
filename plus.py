@@ -153,7 +153,7 @@ class Plus(commands.Cog):
             star_msg = await self.get_star_msg(msg_dict["star_msg_id"])
             if star_msg is None:
                 return
-
+            msg_dict["count"] = count
             await star_msg.edit(content=f"{str(emote)} **{count}** | {reaction.message.channel.mention}")
             return
 
@@ -184,6 +184,8 @@ class Plus(commands.Cog):
             star_msg = await self.get_star_msg(msg_dict["star_msg_id"])
             if star_msg is None:
                 return
+            print(f"Linked Message deleted: {star_msg}")
+            await star_msg.delete()
 
             # Delete the message in the client itself
             # Should also remove in the users where necessary
@@ -234,7 +236,7 @@ class Plus(commands.Cog):
 
     @commands.command()
     @commands.has_guild_permissions(manage_guild=True)
-    async def setup(self, ctx, after_id: int = None):
+    async def catchup(self, ctx, after_id: int = None):
         emote = self.get_emote()
 
         if after_id is None:
