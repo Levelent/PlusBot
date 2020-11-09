@@ -146,8 +146,8 @@ class Plus(commands.Cog):
 
         count = await true_react_count(reaction)
 
-        if reaction.message.id in self.message_store:
-            msg_dict = self.message_store[reaction.message.id]
+        if str(reaction.message.id) in self.message_store:
+            msg_dict = self.message_store[str(reaction.message.id)]
             print(msg_dict)
 
             star_msg = await self.get_star_msg(msg_dict["star_msg_id"])
@@ -157,10 +157,29 @@ class Plus(commands.Cog):
             await star_msg.edit(content=f"{str(emote)} **{count}** | {reaction.message.channel.mention}")
             return
 
-        # TODO: Solve duplicate glitch?
+        # TODO: Solve duplicate bug at threshold?
 
         if count >= self.threshold:
             await self.make_new(reaction.message, count)
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        # Accepts new reactions on non-cached messages which are over the threshold
+        if payload.emoji.id != self.get_emote().id:
+            return
+        print("Star Reaction on non-cached message.")
+        if str(payload.message_id) not in self.message_store:
+            return
+        print("Old message in message store")
+        user = self.bot.get_user(payload.user_id)
+        channel = await self.bot.fetch_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
+        for reaction in message.reactions:
+            if reaction.emoji.id == payload.emoji.id:
+                print("Found reaction")
+                await self.on_reaction_add(reaction, user)
+                return
+        print("Couldn't find reaction")
 
     @commands.Cog.listener()
     async def on_reaction_remove(self, reaction, _):
