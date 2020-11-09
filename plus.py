@@ -5,7 +5,6 @@ from json import load, dumps
 from asyncio import sleep
 from time import time
 from typing import Optional
-from datetime import datetime
 
 
 # Note that the Message ID has to be stored as a string.
@@ -112,6 +111,7 @@ class Plus(commands.Cog):
             "remove_deleted": self.remove_deleted
         }
         update_settings(s_data)
+        print("Saved data to file.")
 
     @data_transfer.before_loop
     async def before_transfer(self):
@@ -164,7 +164,7 @@ class Plus(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
-        # Accepts new reactions on non-cached messages which are over the threshold
+        # Accepts new reactions on non-cached messages which are over the threshold, and in memory.
         if payload.emoji.id != self.get_emote().id:
             return
         print("Star Reaction on non-cached message.")
@@ -183,7 +183,9 @@ class Plus(commands.Cog):
 
     @commands.Cog.listener()
     async def on_reaction_remove(self, reaction, _):
-        # TODO: sort out what happens when a user removes a reaction
+        # Note: it might disappear from starboard, or not at all if it's the message author! Might also delete entirely.
+        # Remove if number of reactions hits drops below threshold.
+
         if reaction.message.id not in self.message_store:
             return
         count = await true_react_count(reaction)
@@ -191,9 +193,6 @@ class Plus(commands.Cog):
             await self.message_store_remove(reaction.message.id)
         else:
             self.message_store[reaction.message.id]["count"] = count
-
-        # Note: it might disappear from starboard, or not at all if it's the message author! Might also delete entirely.
-        # Remove if number of reactions hits drops below threshold.
 
     async def message_store_remove(self, msg_id):
         # Won't remove anything from store if the message isn't there
@@ -235,7 +234,7 @@ class Plus(commands.Cog):
 
         if len(react_msg.attachments) != 0:
             attachments = react_msg.attachments
-            # What if it's not an image?
+            # TODO: What if it's not an image?
             em.set_image(url=attachments[0].url)
 
         out_chl = self.bot.get_channel(self.chl_id)
