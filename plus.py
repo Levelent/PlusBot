@@ -167,13 +167,14 @@ class Plus(commands.Cog):
         # Accepts new reactions on non-cached messages which are over the threshold, and in memory.
         if payload.emoji.id != self.get_emote().id:
             return
-        print("Star Reaction on non-cached message.")
         if str(payload.message_id) not in self.message_store:
             return
-        print("Old message in message store")
         user = self.bot.get_user(payload.user_id)
         channel = await self.bot.fetch_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
+        if message in self.bot.cached_messages:
+            return
+        print("Non-cached message reacted to")
         for reaction in message.reactions:
             if reaction.emoji.id == payload.emoji.id:
                 print("Found reaction")
